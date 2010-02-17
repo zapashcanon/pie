@@ -1,174 +1,12 @@
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <cairo.h>
-#include <cairo-ps.h>
-#include <cairo-pdf.h>
-#include <cairo-svg.h>
 
+#include "pie.h"
 #include "ellipse.h"
-
-struct color {
-	double r;
-	double g;
-	double b;
-	double a;
-};
-
-struct coord {
-	double x;
-	double y;
-};
-
-struct portion {
-	struct color light;
-	struct color dark;
-	struct color dark_deg;
-	struct color line;
-	double line_width;
-
-	struct coord t_cent;
-	struct coord t_strt;
-	struct coord t_stop;
-
-	struct coord b_cent;
-	struct coord b_strt;
-	struct coord b_stop;
-
-	double ang_strt;
-	double ang_stop;
-
-	double ca_strt;
-	double ca_stop;
-
-	char *legend;
-	cairo_text_extents_t legend_exts;
-
-	double tmp;
-};
-
-struct conf {
-	char do_back;
-	struct color back;
-
-	double ratio;
-	double decal;
-	double height;
-	double margin;
-
-	double img_w;
-	double img_h;
-
-	double pie_w;
-	double pie_h;
-
-	double cx; /* centre x */
-	double cy; /* centre y */
-
-	double rx; /* rayon_x */
-	double ry; /* rayon_y */
-
-	double title_size;
-	const char *title;
-	struct color title_color;
-	cairo_text_extents_t title_exts;;
-
-	char draw_leg;
-	double leg_size;
-	struct color leg_color;
-};
-
-
-
-int     conf_imgx = 500;
-int     conf_imgy = 500;
-int     conf_margin = 0;
-double  conf_ratio = 0.5;
-double  conf_decal = 0.1;
-double  conf_height = 0.4;
-
-double  conf_line_width = 0.8f;
-char   *conf_line_color = "#000000";
-
-//char   *conf_back_color = "#DCDAD5";
-char   *conf_back_color = "#ffffff";
-char    conf_do_back = 1;
-
-char   *conf_title = "My Wonderfull Graph";
-double  conf_tit_siz = 25;
-char   *conf_title_color = "#000000";
-
-char    conf_leg = 0;
-double  conf_leg_siz = 15;
-char   *conf_leg_col = "#000000";
-
-#define NB 12
-int nb = NB;
-
-int ent[NB] = {
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1,
-	1
-};
-
-char *color[NB] = {
-	"#ffbe00",
-	"#ff0000",
-	"#00ff00",
-	"#0000ff",
-	"#ffbe00",
-	"#ff0000",
-	"#00ff00",
-	"#0000ff",
-	"#ff0000",
-	"#00ff00",
-	"#0000ff",
-	"#ff00ff"
-};
-
-double extract[NB] = {
-	0,
-	0,
-	0,
-	0,
-	0,
-	0.2,
-	0.2,
-	0,
-	0,
-	0,
-	0,
-	0
-};
-
-char *name[NB] = {
-	"application a",
-	"application b",
-	"application c",
-	"application d",
-	"application e",
-	"application f",
-	"application g",
-	"application h",
-	"application i",
-	"application j",
-	"application k",
-	"application l"
-};
-
-
-
-
 
 static inline
 int hex_to_int(char c)
@@ -182,7 +20,6 @@ int hex_to_int(char c)
 	return 0;
 }
 
-static inline
 void convert_rgba_hex(char *hex, unsigned char alpha, struct color *out)
 {
 	if (hex == NULL)
@@ -330,9 +167,9 @@ void draw_face_rounded(cairo_t *c, struct conf *co, struct portion *p)
 
 	/* trace filled */
 	cairo_set_line_width(c, 0.0);
-	pat = cairo_pattern_create_linear (co->margin, 0.0, co->margin + co->pie_w, 256.0);
-	cairo_pattern_add_color_stop_rgba (pat, 1, p->light.r, p->light.g, p->light.b, 1);
-	cairo_pattern_add_color_stop_rgba (pat, 0, p->dark_deg.r, p->dark_deg.g, p->dark_deg.b, 1);
+	pat = cairo_pattern_create_linear(co->margin, 0.0, co->margin + co->pie_w, 256.0);
+	cairo_pattern_add_color_stop_rgba(pat, 1, p->light.r, p->light.g, p->light.b, 1);
+	cairo_pattern_add_color_stop_rgba(pat, 0, p->dark_deg.r, p->dark_deg.g, p->dark_deg.b, 1);
 	cairo_set_source (c, pat);
 	cairo_fill_preserve(c);
 
@@ -438,7 +275,7 @@ void sort_rounded(struct portion *p, int pnb, struct portion **ps, int *psnb)
 
 	/* extrait rounded qui commence ou termine dans le bas */
 	j = 0;
-	for (i=0; i<nb; i++)
+	for (i=0; i<pnb; i++)
 		if ( p[i].ca_stop > 0.0f && p[i].ca_stop <= M_PI/2.0f )
 			ps[j++] = &p[i];
 	inter = j;
@@ -456,8 +293,9 @@ void sort_rounded(struct portion *p, int pnb, struct portion **ps, int *psnb)
 
 	/* extrait rounded qui commence ou termine dans le bas */
 	j = inter;
-	for (i=0; i<nb; i++)
-		if (p[i].ca_strt >= M_PI/2.0f && p[i].ca_strt < M_PI )
+	for (i=0; i<pnb; i++)
+		if (p[i].ca_strt >= 0.0f && p[i].ca_strt < M_PI &&
+		    p[i].ca_stop > M_PI/2.0f )
 			ps[j++] = &p[i];
 	*psnb = j;
 
@@ -473,11 +311,11 @@ void sort_rounded(struct portion *p, int pnb, struct portion **ps, int *psnb)
 	}
 }
 
-int trace(cairo_t *c, struct conf *co) {
+void pie(cairo_t *c, struct conf *co) {
 	double y;
 	double dec;
 	double inc;
-	int total = 0;
+	double total = 0;
 	double last = 0;
 	double ang;
 	int i;
@@ -500,12 +338,12 @@ int trace(cairo_t *c, struct conf *co) {
 
 	/* build values total */
 	total = 0.0f;
-	for (i=0; i<nb; i++)
-		total += (double)ent[i];
+	for (i=0; i<co->nb; i++)
+		total += co->part[i];
 
 	/* memory used */
-	p = malloc(sizeof(struct portion) * nb);
-	ps = malloc(sizeof(struct portion *) * nb);
+	p = malloc(sizeof(struct portion) * co->nb);
+	ps = malloc(sizeof(struct portion *) * co->nb);
 
 	/* title height */
 	cairo_select_font_face (c, "Sans", CAIRO_FONT_SLANT_NORMAL,
@@ -519,13 +357,13 @@ int trace(cairo_t *c, struct conf *co) {
 		                        CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size (c, co->leg_size);
 		dec = 0;
-		for (i=0; i<nb; i++) {
-			p[i].legend = name[i];
+		for (i=0; i<co->nb; i++) {
+			p[i].legend = co->name[i];
 			cairo_text_extents (c, p[i].legend, &p[i].legend_exts);
 			if (dec < p[i].legend_exts.height)
 				dec = p[i].legend_exts.height;
 		}
-		height_leg = dec * (double)nb;
+		height_leg = dec * (double)co->nb;
 		width_leg = 0;
 	}
 
@@ -535,8 +373,8 @@ int trace(cairo_t *c, struct conf *co) {
 		                        CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size (c, co->leg_size);
 		dec = 0;
-		for (i=0; i<nb; i++) {
-			p[i].legend = name[i];
+		for (i=0; i<co->nb; i++) {
+			p[i].legend = co->name[i];
 			cairo_text_extents (c, p[i].legend, &p[i].legend_exts);
 			if (dec < p[i].legend_exts.width)
 				dec = p[i].legend_exts.width;
@@ -575,12 +413,12 @@ int trace(cairo_t *c, struct conf *co) {
 	 */
 
 	/* pie radius */
-	co->rx = co->pie_w / ( 2.0f * ( max(extract, nb) + co->decal + 1.0f ) );
+	co->rx = co->pie_w / ( 2.0f * ( max(co->extract, co->nb) + co->decal + 1.0f ) );
 	co->ry = co->rx * co->ratio;
 
 	/* adjust radius */
 	hauteur = ( co->ry * 2.0f ) + ( co->height * co->ry ) + 
-	          ( max(extract, nb) * co->ry * 2.0f );
+	          ( max(co->extract, co->nb) * co->ry * 2.0f );
 	if ( hauteur  > co->pie_h ) {
 		co->rx *= (double)co->pie_h / hauteur;
 		co->ry *= (double)co->pie_h / hauteur;
@@ -640,12 +478,12 @@ int trace(cairo_t *c, struct conf *co) {
 
 	/* build coordinates */
 	last = 0;
-	for (i=0; i<nb; i++) {
+	for (i=0; i<co->nb; i++) {
 
 		/* start and stop angles */
 		p[i].ang_strt = last;
 		p[i].ang_stop = p[i].ang_strt + ( ( 2.0f * M_PI * 
-		                (double)ent[i] ) / (double)total );
+		                (double)co->part[i] ) / (double)total );
 		last = p[i].ang_stop;
 
 		/* angles for calc */
@@ -665,9 +503,9 @@ int trace(cairo_t *c, struct conf *co) {
 			p[i].ca_stop += 2.0 * M_PI;
 
 		/* on calcule le point central */
-		p[i].t_cent.x = ( (co->decal + extract[i]) * co->rx * 
+		p[i].t_cent.x = ( (co->decal + co->extract[i]) * co->rx * 
 		                cos( (p[i].ang_strt+p[i].ang_stop)/2 ) ) + co->cx;
-		p[i].t_cent.y = ( (co->decal + extract[i]) * co->ry *
+		p[i].t_cent.y = ( (co->decal + co->extract[i]) * co->ry *
 		                sin( (p[i].ang_strt+p[i].ang_stop)/2 ) ) + co->cy;
 
 		/* point de debut et fin de l'arc */
@@ -685,13 +523,13 @@ int trace(cairo_t *c, struct conf *co) {
 		p[i].b_stop.y = p[i].t_stop.y + ( co->height * co->ry );
 
 		/* colors */
-		convert_rgba_hex(color[i], 0xff, &p[i].light);
+		convert_rgba_hex(co->color[i], 0xff, &p[i].light);
 		col_dark(&p[i].light, &p[i].dark_deg, 0.1);
 		col_dark(&p[i].light, &p[i].dark, 0.5);
-		convert_rgba_hex(conf_line_color, 0xff, &p[i].line);
+		memcpy(&p[i].line, &co->line_color, sizeof(struct color));
 
 		/* line witdh */
-		p[i].line_width = conf_line_width;
+		p[i].line_width = co->line_width;
 	}
 
 	/* draw backgroud */
@@ -736,7 +574,7 @@ int trace(cairo_t *c, struct conf *co) {
 		a2.x = co->margin + ( dec * (1.0f-DECFAC) );
 		a2.y = dec * (1.0f-DECFAC);
 
-		for (i=0; i<nb; i++) {
+		for (i=0; i<co->nb; i++) {
 
 			cairo_new_path(c);
 			cairo_move_to(c, a1.x, a1.y+y);
@@ -787,61 +625,22 @@ int trace(cairo_t *c, struct conf *co) {
 
 	if (co->height > 0.0f) {
 
-		sort_start(p, nb, ps, &psnb);
+		sort_start(p, co->nb, ps, &psnb);
 		for (i=0; i<psnb; i++)
 			draw_face_start(c, ps[i]);
 
-		sort_stop(p, nb, ps, &psnb);
+		sort_stop(p, co->nb, ps, &psnb);
 		for (i=0; i<psnb; i++)
 			draw_face_stop(c, ps[i]);
 
-		sort_rounded(p, nb, ps, &psnb);
+		sort_rounded(p, co->nb, ps, &psnb);
 		for (i=0; i<psnb; i++)
 			draw_face_rounded(c, co, ps[i]);
 
 	}
 
 	/*tous les tops */
-	for (i=0; i<nb; i++)
+	for (i=0; i<co->nb; i++)
 		draw_face_top(c, co, &p[i]);
 }
 
-int main(void) {
-	cairo_surface_t *s;
-	cairo_t *c;
-	struct conf co;
-
-	/* copy conf */
-	co.ratio      = conf_ratio;
-	co.decal      = conf_decal;
-	co.height     = conf_height;
-	co.margin     = conf_margin;
-	co.img_w      = conf_imgx;
-	co.img_h      = conf_imgy;
-	co.do_back    = conf_do_back;
-	co.title      = conf_title;
-	co.title_size = conf_tit_siz;
-	co.draw_leg   = conf_leg;
-	co.leg_size   = conf_leg_siz;
-	convert_rgba_hex(conf_title_color, 0xff, &co.title_color);
-	convert_rgba_hex(conf_back_color, 0xff, &co.back);
-	convert_rgba_hex(conf_leg_col, 0xff, &co.leg_color);
-
-	/* create image */
-	s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, co.img_w, co.img_h);
-//	s = cairo_ps_surface_create("amg.ps", co.img_w, co.img_h);
-//	s = cairo_pdf_surface_create("amg.pdf", co.img_w, co.img_h);
-//	s = cairo_svg_surface_create("amg.svg", co.img_w, co.img_h);
-
-	/* create cairo */
-	c = cairo_create(s);
-
-	/* trace path */
-	trace(c, &co);
-
-	/* write image */
-//	cairo_surface_write_to_png(s, "amg.png");
-//	cairo_surface_finish(s);
-//	cairo_surface_destroy(s);
-//	cairo_destroy(c);
-}

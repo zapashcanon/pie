@@ -1,5 +1,5 @@
-OBJS = pie.o ellipse.o
-LIBS = -lcairo -lm
+OBJS = pie.o ellipse.o main.o
+LIBS = -lcairo -lpixman-1 -lm
 CFLAGS = -g -O0 -I/usr/include/cairo
 
 pie: $(OBJS)
