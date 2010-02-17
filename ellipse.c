@@ -32,6 +32,8 @@ void cairo_ellipse_negative(cairo_t *c, double x, double y, double a, double b, 
 	cairo_line_to(c, x+(a*cos(stop)), y+(b*sin(stop)));
 }
 
+#if 0
+
 int ____main(void) {
 	cairo_t *c;
 	cairo_surface_t *s;
@@ -58,3 +60,5 @@ int ____main(void) {
 
 	cairo_surface_write_to_png(s, "z.png");
 }
+
+#endif
