@@ -28,7 +28,7 @@ void usage() {
 		"                        values must between 0 and 1\n"
 		" -f <EPS|PNG|PDF|SVG> : Choose output format\n"
 		" -h <integer>         : Height in pixel\n"
-		" -i <file>            : input file\n"
+		" -i <file>            : input data file\n"
 		" -l <hex>             : Legend color (ex: #ffffff)\n"
 		" -L <float>           : Legend size in px\n"
 		" -m <float>           : Margin in pixel\n"
@@ -118,14 +118,74 @@ static inline int add_data(char *in, struct conf *co)
 	co->name[i]    = strdup(name);
 }
 
+#define DLEN 128
+
+static inline void load_data(char *fn, struct conf *co)
+{
+	FILE *f;
+	char b[DLEN];
+	char *start;
+	char *p;
+
+	/* if stdin */
+	if (strcmp(fn, "-") == 0)
+		f = stdin;
+
+	/* open file */
+	else {
+		f = fopen(fn, "r");
+		if (f == NULL) {
+			fprintf(stderr, "can't open input data file\n");
+			exit(1);
+		}
+	}
+
+	while (1) {
+
+		if (feof(f))
+			break;;
+
+		/* read line */
+		memset(b, 0, DLEN);
+		fgets(b, DLEN, f);
+
+		/* strip start spaces */
+		start = b;
+		while (*start == ' ' || *start == '\t')
+			start++;
+
+		/* remove comment */
+		if (*start == '#')
+			continue;
+
+		/* strip end spaces */
+		p = start;
+		while (*p != '\0')
+			p++;
+		while (p >= start && ( *p == '\0' || *p == '\n' || *p == '\t' || *p == '\r' || *p == ' ' ) )
+			p--;
+		p++;
+		*p = '\0';
+
+		/* if empty */
+		if (*start == '\0')
+			continue;
+
+		/* load data */
+		add_data(start, co);
+	}
+
+	fclose(f);
+}
+
 int main(int argc, char *argv[])
 {
 	cairo_surface_t *s;
 	cairo_t *c;
 	struct conf co;
 	int nb;
+	char *f_in = NULL;
 	FILE *out;
-	FILE *in;
 
 	/* init cof */
 	co.out           = NULL;
@@ -229,6 +289,12 @@ int main(int argc, char *argv[])
 		case 'h':
 			get_one(&nb, argc);
 			co.img_h = atoi(argv[nb]);
+			break;
+
+		/* input file */
+		case 'i':
+			get_one(&nb, argc);
+			f_in = argv[nb];
 			break;
 
 		/* legend color */
@@ -342,6 +408,10 @@ parsing_end:
 	/* load data */
 	for (; nb<argc; nb++)
 		add_data(argv[nb], &co);
+
+	/* load data from file */
+	if (f_in != NULL)
+		load_data(f_in, &co);
 
 	/* create image */
 
