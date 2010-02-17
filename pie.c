@@ -310,8 +310,8 @@ void draw_face_rounded(cairo_t *c, struct conf *co, struct portion *p)
 	/* on arrange le stop */
 	if (p->ca_stop > M_PI) {
 		stop = M_PI;
-		bstop.x = ( co->rx * cos(stop) ) + p->t_cent.x;
-		bstop.y = ( co->rx * sin(stop) ) + p->t_cent.y + ( co->decal * co->ry );
+		bstop.x = ( co->rx * cos(M_PI) ) + p->t_cent.x;
+		bstop.y = ( co->rx * sin(M_PI) ) + p->t_cent.y + ( co->height * co->ry );
 	}
 
 	else {
