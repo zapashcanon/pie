@@ -331,7 +331,7 @@ parsing_end:
 	else {
 		out = fopen(co.out, "w");
 		if (out == NULL) {
-			fprintf(stderr, "can't open outout file\n");
+			fprintf(stderr, "can't open output file\n");
 			exit(1);
 		}
 	}
