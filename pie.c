@@ -313,7 +313,7 @@ void sort_rounded(struct portion *p, int pnb, struct portion **ps, int *psnb)
 
 void pie(cairo_t *c, struct conf *co) {
 	double y;
-	double dec;
+	double dec = 0.0f;
 	double inc;
 	double total = 0;
 	double last = 0;
