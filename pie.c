@@ -53,7 +53,7 @@ void cairo_set_source_col(cairo_t *c, const struct color *col)
 	cairo_set_source_rgba(c, col->r, col->g, col->b, col->a);
 }
 
-static inline col_dark(struct color *in, struct color *out, double dark) {
+static inline void col_dark(struct color *in, struct color *out, double dark) {
 	out->r = in->r * dark;
 	out->g = in->g * dark;
 	out->b = in->b * dark;
@@ -314,23 +314,13 @@ void sort_rounded(struct portion *p, int pnb, struct portion **ps, int *psnb)
 void pie(cairo_t *c, struct conf *co) {
 	double y;
 	double dec = 0.0f;
-	double inc;
 	double total = 0;
 	double last = 0;
-	double ang;
 	int i;
-	struct color col;
-	struct color bg;
 	struct portion *p;
 	struct portion **ps;
 	int psnb;
-	double xdecal;
-	double ydecal;
-	double centerx;
-	double centery;
 	double hauteur;
-	struct color colo;
-	const char *eee = "Hello";
 	double height_leg;
 	double width_leg;
 	struct coord a1;

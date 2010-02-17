@@ -53,7 +53,7 @@ static inline void get_one(int *nb, int argc)
 	}
 }
 
-static inline int add_data(char *in, struct conf *co)
+static inline void add_data(char *in, struct conf *co)
 {
 	double value;
 	double extrude;
@@ -462,4 +462,6 @@ parsing_end:
 	/* end */
 	fflush(out);
 	fclose(out);
+
+	return 0;
 }

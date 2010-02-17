@@ -37,7 +37,6 @@ void cairo_ellipse_negative(cairo_t *c, double x, double y, double a, double b, 
 int ____main(void) {
 	cairo_t *c;
 	cairo_surface_t *s;
-	double i;
 
 	s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 300, 300);
 	c = cairo_create(s);
@@ -59,6 +58,8 @@ int ____main(void) {
 
 
 	cairo_surface_write_to_png(s, "z.png");
+
+	return 0;
 }
 
 #endif
