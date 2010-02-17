@@ -14,7 +14,7 @@ void cairo_ellipse(cairo_t *c, double x, double y, double a, double b, double st
 		stop += 2.0f * M_PI;
 
 	cairo_line_to(c, x+(a*cos(start)), y+(b*sin(start)));
-	for (i=start; i<stop; i += 0.1f)
+	for (i=start; i<stop; i += 0.01f)
 		cairo_line_to(c, x+(a*cos(i)), y+(b*sin(i)));
 	cairo_line_to(c, x+(a*cos(stop)), y+(b*sin(stop)));
 }
@@ -27,7 +27,7 @@ void cairo_ellipse_negative(cairo_t *c, double x, double y, double a, double b, 
 		stop -= 2.0f * M_PI;
 
 	cairo_move_to(c, x+(a*cos(start)), y+(b*sin(start)));
-	for (i=start; i>stop; i -= 0.1f)
+	for (i=start; i>stop; i -= 0.01f)
 		cairo_line_to(c, x+(a*cos(i)), y+(b*sin(i)));
 	cairo_line_to(c, x+(a*cos(stop)), y+(b*sin(stop)));
 }
