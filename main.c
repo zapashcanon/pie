@@ -214,14 +214,14 @@ int main(int argc, char *argv[])
 	co.height        = -1;
 	co.margin        = -1;
 	co.do_back       = 0;
-	co.title         = NULL;
-	co.title_size    = 15;
 	co.draw_leg      = 0;
 	co.leg_size      = 10;
 	co.leg_color.r   = 0x00;
 	co.leg_color.g   = 0x00;
 	co.leg_color.b   = 0x00;
 	co.leg_color.a   = 0xff;
+	co.title         = NULL;
+	co.title_size    = 15;
 	co.title_color.r = 0x00;
 	co.title_color.g = 0x00;
 	co.title_color.b = 0x00;
