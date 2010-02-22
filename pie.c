@@ -8,6 +8,60 @@
 #include "pie.h"
 #include "ellipse.h"
 
+struct color {
+	double r;
+	double g;
+	double b;
+	double a;
+};
+
+struct conf {
+	char *out;
+
+	char do_back;
+	struct color back;
+
+	double ratio;
+	double decal;
+	double height;
+	double margin;
+
+	double img_w;
+	double img_h;
+
+	double pie_w;
+	double pie_h;
+
+	double cx; /* centre x */
+	double cy; /* centre y */
+
+	double rx; /* rayon_x */
+	double ry; /* rayon_y */
+
+	double line_width;
+	struct color line_color;
+
+	double title_size;
+	char *title;
+	struct color title_color;
+	cairo_text_extents_t title_exts;;
+
+	char draw_leg;
+	double leg_size;
+	struct color leg_color;
+
+	/* data */
+	int nb;
+	double *part;
+	char **color;
+	double *extract;
+	char **name;
+
+	/* output */
+	pie_write_cb cb;
+	void *arg;
+};
+
 struct coord {
 	double x;
 	double y;
@@ -41,6 +95,121 @@ struct portion {
 };
 
 static inline
+void convert_rgba_hex(char *hex, unsigned char alpha, struct color *out);
+
+struct conf *pie_new(void) 
+{
+	struct conf *co;
+
+	co = malloc(sizeof(struct conf));
+	if (co == NULL)
+		return NULL;
+
+	/* init cof */
+	co->out           = NULL;
+	co->ratio         = -1;
+	co->img_w         = -1;
+	co->img_h         = -1;
+	co->decal         = -1;
+	co->height        = -1;
+	co->margin        = -1;
+	co->do_back       = 0;
+	co->draw_leg      = 0;
+	co->leg_size      = 10;
+	co->leg_color.r   = 0x00;
+	co->leg_color.g   = 0x00;
+	co->leg_color.b   = 0x00;
+	co->leg_color.a   = 0xff;
+	co->title         = NULL;
+	co->title_size    = 15;
+	co->title_color.r = 0x00;
+	co->title_color.g = 0x00;
+	co->title_color.b = 0x00;
+	co->title_color.a = 0xff;
+	co->line_width    = 0;
+	co->line_color.r  = 0x00;
+	co->line_color.g  = 0x00;
+	co->line_color.b  = 0x00;
+	co->line_color.a  = 0xff;
+	co->part          = NULL;
+	co->color         = NULL;
+	co->extract       = NULL;
+	co->name          = NULL;
+	co->nb            = 0;
+
+	return co;
+}
+
+void pie_set_do_back(struct conf *co, int do_back) {
+	co->do_back = do_back;
+}
+void pie_set_back_color(struct conf *co, char *color) {
+	convert_rgba_hex(color, 0xff, &co->back);
+}
+void pie_set_line_width(struct conf *co, double width) {
+	co->line_width = width;
+}
+void pie_set_line_color(struct conf *co, char *color) {
+	convert_rgba_hex(color, 0xff, &co->line_color);
+}
+void pie_set_decal(struct conf *co, double width) {
+	co->decal = width;
+}
+void pie_set_height(struct conf *co, double height) {
+	co->height = height;
+}
+void pie_set_img_h(struct conf *co, int img_h) {
+	co->img_h = img_h;
+}
+void pie_set_img_w(struct conf *co, int img_w) {
+	co->img_w = img_w;
+}
+void pie_set_do_legend(struct conf *co, int do_legend) {
+	co->draw_leg = do_legend;
+}
+void pie_set_legend_color(struct conf *co, char *color) {
+	convert_rgba_hex(color, 0xff, &co->leg_color);
+}
+void pie_set_legend_size(struct conf *co, double size) {
+	co->leg_size = size;
+}
+void pie_set_margin(struct conf *co, int size) {
+	co->margin = size;
+}
+void pie_set_ratio(struct conf *co, double size) {
+	co->ratio = size;
+}
+void pie_set_title_size(struct conf *co, int size) {
+	co->title_size = size;
+}
+void pie_set_title(struct conf *co, char *title) {
+	free(co->title);
+	co->title = strdup(title);
+}
+void pie_set_title_color(struct conf *co, char *color) {
+	convert_rgba_hex(color, 0xff, &co->title_color);
+}
+int pie_add(struct conf *co, double value, char *color, double extrude, char *name)
+{
+	int i;
+
+	/* memory */
+	i = co->nb;
+	co->nb++;
+	co->part    = realloc(co->part,    co->nb * sizeof(double));
+	co->color   = realloc(co->color,   co->nb * sizeof(char *));
+	co->extract = realloc(co->extract, co->nb * sizeof(double));
+	co->name    = realloc(co->name,    co->nb * sizeof(char *));
+
+	co->part[i]    = value;
+	co->color[i]   = strdup(color);
+	co->extract[i] = extrude;
+	co->name[i]    = strdup(name);
+
+	return 1;
+}
+
+static inline
 int hex_to_int(char c)
 {
 	if (c >= '0' && c <='9')
@@ -52,6 +221,7 @@ int hex_to_int(char c)
 	return 0;
 }
 
+static
 void convert_rgba_hex(char *hex, unsigned char alpha, struct color *out)
 {
 	if (hex == NULL)
@@ -343,7 +513,7 @@ void sort_rounded(struct portion *p, int pnb, struct portion **ps, int *psnb)
 	}
 }
 
-void pie(cairo_t *c, struct conf *co) {
+void pie_draw(cairo_t *c, struct conf *co) {
 	double y;
 	double dec = 0.0f;
 	double total = 0;
@@ -357,6 +527,30 @@ void pie(cairo_t *c, struct conf *co) {
 	double width_leg;
 	struct coord a1;
 	struct coord a2;
+
+	/* default co->fig */
+	if (co->ratio == -1)
+		co->ratio = 0.5f;
+
+	if (co->img_w != -1 && co->img_h == -1)
+		co->img_h = co->img_w;
+
+	else if (co->img_w == -1 && co->img_h != -1)
+		co->img_w = co->img_h;
+
+	else if (co->img_w == -1 && co->img_h == -1) {
+		co->img_w = 400;
+		co->img_h = 400;
+	}
+
+	if (co->decal == -1)
+		co->decal = 0.1;
+
+	if (co->height == -1)
+		co->height = 0.4;
+
+	if(co->margin == -1)
+		co->margin = 10;
 
 	/* build values total */
 	total = 0.0f;

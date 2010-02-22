@@ -121,18 +121,8 @@ static inline void add_data(char *in, struct conf *co)
 	p++;
 	name = p;
 
-	/* memory */
-	i = co->nb;
-	co->nb++;
-	co->part    = realloc(co->part,    co->nb * sizeof(double));
-	co->color   = realloc(co->color,   co->nb * sizeof(char *));
-	co->extract = realloc(co->extract, co->nb * sizeof(double));
-	co->name    = realloc(co->name,    co->nb * sizeof(char *));
-
-	co->part[i]    = value;
-	co->color[i]   = strdup(color);
-	co->extract[i] = extrude;
-	co->name[i]    = strdup(name);
+	/* add */
+	pie_add(co, value, color, extrude, name);
 }
 
 #define DLEN 128
@@ -199,42 +189,21 @@ int main(int argc, char *argv[])
 {
 	cairo_surface_t *s;
 	cairo_t *c;
-	struct conf co;
+	struct conf *co;
 	int nb;
 	char *f_in = NULL;
 	FILE *out;
+	double ratio;
+	int mode;
+	char *file_out;
+	int img_w;
+	int img_h;
 
-	/* init cof */
-	co.out           = NULL;
-	co.mode          = 1;
-	co.ratio         = -1;
-	co.img_w         = -1;
-	co.img_h         = -1;
-	co.decal         = -1;
-	co.height        = -1;
-	co.margin        = -1;
-	co.do_back       = 0;
-	co.draw_leg      = 0;
-	co.leg_size      = 10;
-	co.leg_color.r   = 0x00;
-	co.leg_color.g   = 0x00;
-	co.leg_color.b   = 0x00;
-	co.leg_color.a   = 0xff;
-	co.title         = NULL;
-	co.title_size    = 15;
-	co.title_color.r = 0x00;
-	co.title_color.g = 0x00;
-	co.title_color.b = 0x00;
-	co.title_color.a = 0xff;
-	co.line_width    = 0;
-	co.line_color.r  = 0x00;
-	co.line_color.g  = 0x00;
-	co.line_color.b  = 0x00;
-	co.line_color.a  = 0xff;
-	co.part          = NULL;
-	co.color         = NULL;
-	co.extract       = NULL;
-	co.name          = NULL;
+	co = pie_new();
+	if (co == NULL) {
+		fprintf(stderr, "Memory error\n");
+		exit(1);
+	}
 
 	if (argc == 1)
 		usage();
@@ -257,45 +226,45 @@ int main(int argc, char *argv[])
 		/* background color */
 		case 'b':
 			get_one(&nb, argc);
-			co.do_back = 1;
-			convert_rgba_hex(argv[nb], 0xff, &co.back);
+			pie_set_do_back(co, 1);
+			pie_set_back_color(co, argv[nb]);
 			break;
 
 		/* line width */
 		case 'c':
 			get_one(&nb, argc);
-			co.line_width = atof(argv[nb]);
+			pie_set_line_width(co, atof(argv[nb]));
 			break;
 
 		/* line color */
 		case 'C':
 			get_one(&nb, argc);
-			convert_rgba_hex(argv[nb], 0xff, &co.line_color);
+			pie_set_line_color(co, argv[nb]);
 			break;
 
 		/* decal */
 		case 'd':
 			get_one(&nb, argc);
-			co.decal = atof(argv[nb]);
+			pie_set_decal(co, atof(argv[nb]));
 			break;
 
 		/* decal */
 		case 'e':
 			get_one(&nb, argc);
-			co.height = atof(argv[nb]);
+			pie_set_height(co, atof(argv[nb]));
 			break;
 
 		/* output format */
 		case 'f':
 			get_one(&nb, argc);
 			/**/ if (strcmp(argv[nb], "PNG") == 0)
-				co.mode = 1;
+				mode = 1;
 			else if (strcmp(argv[nb], "EPS") == 0)
-				co.mode = 2;
+				mode = 2;
 			else if (strcmp(argv[nb], "PDF") == 0)
-				co.mode = 3;
+				mode = 3;
 			else if (strcmp(argv[nb], "SVG") == 0)
-				co.mode = 4;
+				mode = 4;
 			else {
 				fprintf(stderr, "unknown format %s\n", argv[nb]);
 				exit(1);
@@ -305,7 +274,8 @@ int main(int argc, char *argv[])
 		/* height */
 		case 'h':
 			get_one(&nb, argc);
-			co.img_h = atoi(argv[nb]);
+			img_h = atoi(argv[nb]);
+			pie_set_img_h(co, img_h);
 			break;
 
 		/* input file */
@@ -317,61 +287,63 @@ int main(int argc, char *argv[])
 		/* legend color */
 		case 'l':
 			get_one(&nb, argc);
-			co.draw_leg = 1;
-			convert_rgba_hex(argv[nb], 0xff, &co.leg_color);
+			pie_set_do_legend(co, 1);
+			pie_set_legend_color(co, argv[nb]);
 			break;
 
 		/* legend size */
 		case 'L':
 			get_one(&nb, argc);
-			co.draw_leg = 1;
-			co.leg_size = atof(argv[nb]);
+			pie_set_do_legend(co, 1);
+			pie_set_legend_size(co, atof(argv[nb]));
 			break;
 
 		/* margin */
 		case 'm':
 			get_one(&nb, argc);
-			co.margin = atof(argv[nb]);
+			pie_set_margin(co, atof(argv[nb]));
 			break;
 
 		/* output */
 		case 'o':
 			get_one(&nb, argc);
-			co.out = argv[nb];
+			file_out = argv[nb];
 			break;
 
 		/* ratio */
 		case 'r':
 			get_one(&nb, argc);
-			co.ratio = atof(argv[nb]);
-			if (co.ratio < 0 || co.ratio > 1) {
+			ratio = atof(argv[nb]);
+			if (ratio < 0 || ratio > 1) {
 				fprintf(stderr, "ratio must be >= 0 and <= 1\n");
 				exit(1);
 			}
+			pie_set_ratio(co, ratio);
 			break;
 
 		/* title size */
 		case 's':
 			get_one(&nb, argc);
-			co.title_size = atoi(argv[nb]);
+			pie_set_title_size(co, atoi(argv[nb]));
 			break;
 
 		/* title */
 		case 't':
 			get_one(&nb, argc);
-			co.title = argv[nb];
+			pie_set_title(co, argv[nb]);
 			break;
 
-		/* title size */
+		/* title color */
 		case 'T':
 			get_one(&nb, argc);
-			convert_rgba_hex(argv[nb], 0xff, &co.title_color);
+			pie_set_title_color(co, argv[nb]);
 			break;
 
 		/* width */
 		case 'w':
 			get_one(&nb, argc);
-			co.img_w = atoi(argv[nb]);
+			img_w = atoi(argv[nb]);
+			pie_set_img_w(co, img_w);
 			break;
 		}
 	}
@@ -379,80 +351,53 @@ int main(int argc, char *argv[])
 parsing_end:
 
 	/* check */
-	if (co.out == NULL) {
+	if (file_out == NULL) {
 		fprintf(stderr, "output name is mandatory\n");
 		exit(1);
 	}
 
-	/* default config */
-	if (co.ratio == -1)
-		co.ratio = 0.5f;
-
-	if (co.img_w != -1 && co.img_h == -1)
-		co.img_h = co.img_w;
-	
-	else if (co.img_w == -1 && co.img_h != -1)
-		co.img_w = co.img_h;
-	
-	else if (co.img_w == -1 && co.img_h == -1) {
-		co.img_w = 400;
-		co.img_h = 400;
-	}
-
-	if (co.decal == -1)
-		co.decal = 0.1;
-	
-	if (co.height == -1)
-		co.height = 0.4;
-
-	if(co.margin == -1)
-		co.margin = 10;
-
 	/* open output file */
-	if (strcmp(co.out, "-") == 0)
+	if (strcmp(file_out, "-") == 0)
 		out = stdout;
 	else {
-		out = fopen(co.out, "w");
+		out = fopen(file_out, "w");
 		if (out == NULL) {
 			fprintf(stderr, "can't open output file\n");
 			exit(1);
 		}
 	}
 
-	/* read data */
-	co.nb = 0;
-
 	/* load data */
 	for (; nb<argc; nb++)
-		add_data(argv[nb], &co);
+		add_data(argv[nb], co);
 
 	/* load data from file */
 	if (f_in != NULL)
-		load_data(f_in, &co);
+		load_data(f_in, co);
 
 	/* create image */
 
-	switch (co.mode) {
+	switch (mode) {
 
 	/* PNG */
 	case 1:
-		s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, co.img_w, co.img_h);
+		s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, img_w, img_h);
 		break;
 
 	/* EPS */
 	case 2:
-		s = cairo_ps_surface_create_for_stream(wr, out, co.img_w, co.img_h);
+		s = cairo_ps_surface_create_for_stream(wr, out, img_w, img_h);
 		cairo_ps_surface_set_eps(s, 1);
 		break;
 
 	/* SVG */
 	case 3:
-		s = cairo_svg_surface_create_for_stream(wr, out, co.img_w, co.img_h);
+		s = cairo_svg_surface_create_for_stream(wr, out, img_w, img_h);
 		break;
 
 	/* PDF */
 	case 4:
-		s = cairo_pdf_surface_create_for_stream(wr, out, co.img_w, co.img_h);
+		s = cairo_pdf_surface_create_for_stream(wr, out, img_w, img_h);
 		break;
 	}
 
@@ -460,12 +405,12 @@ parsing_end:
 	c = cairo_create(s);
 
 	/* trace path */
-	pie(c, &co);
+	pie_draw(c, co);
 	cairo_close_path(c);
 	cairo_show_page(c);
 
 	/* write image */
-	if (co.mode == 1)
+	if (mode == 1)
 		cairo_surface_write_to_png_stream(s, wr, out);
 
 	/* general vectoriel */

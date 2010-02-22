@@ -3,58 +3,28 @@
 
 #include <cairo.h>
 
-struct color {
-	double r;
-	double g;
-	double b;
-	double a;
-};
+struct conf;
 
-struct conf {
-	char *out;
-	int mode;
+typedef size_t (*pie_write_cb)(void *arg, const unsigned char *data, unsigned int len);
 
-	char do_back;
-	struct color back;
-
-	double ratio;
-	double decal;
-	double height;
-	double margin;
-
-	double img_w;
-	double img_h;
-
-	double pie_w;
-	double pie_h;
-
-	double cx; /* centre x */
-	double cy; /* centre y */
-
-	double rx; /* rayon_x */
-	double ry; /* rayon_y */
-
-	double line_width;
-	struct color line_color;
-
-	double title_size;
-	const char *title;
-	struct color title_color;
-	cairo_text_extents_t title_exts;;
-
-	char draw_leg;
-	double leg_size;
-	struct color leg_color;
-
-	/* data */
-	int nb;
-	double *part;
-	char **color;
-	double *extract;
-	char **name;
-};
-
-void convert_rgba_hex(char *hex, unsigned char alpha, struct color *out);
-void pie(cairo_t *c, struct conf *co);
+struct conf *pie_new(void);
+void pie_set_do_back(struct conf *co, int do_back);
+void pie_set_back_color(struct conf *co, char *color);
+void pie_set_line_width(struct conf *co, double width);
+void pie_set_line_color(struct conf *co, char *color);
+void pie_set_decal(struct conf *co, double width);
+void pie_set_height(struct conf *co, double height);
+void pie_set_img_h(struct conf *co, int img_h);
+void pie_set_img_w(struct conf *co, int img_w);
+void pie_set_do_legend(struct conf *co, int do_legend);
+void pie_set_legend_color(struct conf *co, char *color);
+void pie_set_legend_size(struct conf *co, double size);
+void pie_set_margin(struct conf *co, int size);
+void pie_set_ratio(struct conf *co, double size);
+void pie_set_title_size(struct conf *co, int size);
+void pie_set_title(struct conf *co, char *title);
+void pie_set_title_color(struct conf *co, char *color);
+int pie_add(struct conf *co, double value, char *color, double extrude, char *name);
+void pie_draw(cairo_t *c, struct conf *co);
 
 #endif /* __PIE_H__ */
