@@ -28,7 +28,7 @@ void usage() {
 		" -b <hex>             : Background color (ex: #ffffff). Default is\n"
 		"                        transparent\n"
 		" -c <float>           : Pie line width. Default is 0\n"
-		" -C <hex>             : Pie line color. Default is transparent\n"
+		" -C <hex>             : Pie line color. Default is black\n"
 		" -d <float>           : Percent explode.\n"
 		"                        Values must between 0 and 1. default is 0.1\n"
 		" -e <float>           : Percent extrusion (pie height).\n"
@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
 	co.line_color.r  = 0x00;
 	co.line_color.g  = 0x00;
 	co.line_color.b  = 0x00;
-	co.line_color.a  = 0x00;
+	co.line_color.a  = 0xff;
 	co.part          = NULL;
 	co.color         = NULL;
 	co.extract       = NULL;
