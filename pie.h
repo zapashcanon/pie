@@ -10,38 +10,6 @@ struct color {
 	double a;
 };
 
-struct coord {
-	double x;
-	double y;
-};
-
-struct portion {
-	struct color light;
-	struct color dark;
-	struct color dark_deg;
-	struct color line;
-	double line_width;
-
-	struct coord t_cent;
-	struct coord t_strt;
-	struct coord t_stop;
-
-	struct coord b_cent;
-	struct coord b_strt;
-	struct coord b_stop;
-
-	double ang_strt;
-	double ang_stop;
-
-	double ca_strt;
-	double ca_stop;
-
-	char *legend;
-	cairo_text_extents_t legend_exts;
-
-	double tmp;
-};
-
 struct conf {
 	char *out;
 	int mode;
