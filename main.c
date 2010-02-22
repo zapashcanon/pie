@@ -35,7 +35,7 @@ void usage() {
 		"                        Values must between 0 and 1. Default is 0.4\n"
 		" -f <EPS|PNG|PDF|SVG> : Choose output format. Default is PNG\n"
 		" -h <integer>         : Height in pixel. Default is equal than -w. If\n"
-		"                        -h is not defined, is 100px\n"
+		"                        -h is not defined, is 400px\n"
 		" -i <file>            : Input data file\n"
 		" -l <hex>             : Legend color (ex: #ffffff). Default is black\n"
 		" -L <float>           : Legend size in px. Default is 10px\n"
@@ -47,7 +47,7 @@ void usage() {
 		" -t <title>           : Graph title. Default is empty\n"
 		" -T <hex>             : Title color (ex: #ffffff). Default is black\n"
 		" -w <float>           : Width in pixel. Default is equal than -h. If\n"
-		"                        -h is not defined, is 100px\n"
+		"                        -h is not defined, is 400px\n"
 		"\n"
 		"Values format is: value<float>#color<hex>:ratio_explode<float>:name\n"
 		"\n"
@@ -395,8 +395,8 @@ parsing_end:
 		co.img_w = co.img_h;
 	
 	else if (co.img_w == -1 && co.img_h == -1) {
-		co.img_w = 100;
-		co.img_h = 100;
+		co.img_w = 400;
+		co.img_h = 400;
 	}
 
 	if (co.decal == -1)
