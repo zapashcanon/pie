@@ -1,0 +1,12 @@
+#!/bin/bash
+
+rm test1.png test2.png
+
+../pie -f PNG -w 400 -h 400 -o test1.png -l '#000000' -L 10 -t 'the title' -b '#ffffff' -c 1 -C '#000000' -- \
+"10#ffbe00:0:a" \
+"20#ff0000:0:b" \
+"30#00ff00:0:c" \
+"40#0000ff:0:d"
+
+
+../pie -f PNG -w 400 -h 400 -o test2.png -l '#000000' -L 10 -t 'the title' -b '#ffffff' -i data -r 0.5 "1#ffbe00:0:application a"
