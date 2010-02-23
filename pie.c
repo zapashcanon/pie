@@ -4,6 +4,9 @@
 #include <string.h>
 
 #include <cairo.h>
+#include <cairo-ps.h>
+#include <cairo-pdf.h>
+#include <cairo-svg.h>
 
 #include "pie.h"
 #include "ellipse.h"
@@ -513,7 +516,7 @@ void sort_rounded(struct portion *p, int pnb, struct portion **ps, int *psnb)
 	}
 }
 
-void pie_draw(cairo_t *c, struct conf *co) {
+void pie_cairo_draw(cairo_t *c, struct conf *co) {
 	double y;
 	double dec = 0.0f;
 	double total = 0;
@@ -860,3 +863,82 @@ void pie_draw(cairo_t *c, struct conf *co) {
 		draw_face_top(c, co, &p[i]);
 }
 
+static
+cairo_status_t cairo_wr(void *closure, const unsigned char *data, unsigned int length)
+{
+	FILE *out = closure;
+
+	fwrite(data, 1, length, out);
+
+	return CAIRO_STATUS_SUCCESS;
+}
+
+
+void pie_draw(struct conf *co, int mode, const char *file_out)
+{
+	cairo_surface_t *s;
+	cairo_t *c;
+	FILE *out;
+
+	/* open output file */
+	if (strcmp(file_out, "-") == 0)
+		out = stdout;
+
+	else {
+		out = fopen(file_out, "w");
+		if (out == NULL) {
+			fprintf(stderr, "can't open output file\n");
+			exit(1);
+		}
+	}
+
+	/* create image */
+
+	switch (mode) {
+
+	/* PNG */
+	case 1:
+		s = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, co->img_w, co->img_h);
+		break;
+
+	/* EPS */
+	case 2:
+		s = cairo_ps_surface_create_for_stream(cairo_wr, out, co->img_w, co->img_h);
+		cairo_ps_surface_set_eps(s, 1);
+		break;
+
+	/* SVG */
+	case 3:
+		s = cairo_svg_surface_create_for_stream(cairo_wr, out, co->img_w, co->img_h);
+		break;
+
+	/* PDF */
+	case 4:
+		s = cairo_pdf_surface_create_for_stream(cairo_wr, out, co->img_w, co->img_h);
+		break;
+	}
+
+	/* create cairo */
+	c = cairo_create(s);
+
+	/* trace path */
+	pie_cairo_draw(c, co);
+	cairo_close_path(c);
+	cairo_show_page(c);
+
+	/* write image */
+	if (mode == 1)
+		cairo_surface_write_to_png_stream(s, cairo_wr, out);
+
+	/* general vectoriel */
+	else {
+		cairo_surface_flush(s);
+		cairo_surface_finish(s);
+		cairo_surface_destroy(s);
+		cairo_destroy(c);
+	}
+
+	/* end */
+	fflush(out);
+	fclose(out);
+}

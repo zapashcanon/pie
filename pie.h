@@ -25,6 +25,7 @@ void pie_set_title_size(struct conf *co, int size);
 void pie_set_title(struct conf *co, char *title);
 void pie_set_title_color(struct conf *co, char *color);
 int pie_add(struct conf *co, double value, char *color, double extrude, char *name);
-void pie_draw(cairo_t *c, struct conf *co);
+void pie_cairo_draw(cairo_t *c, struct conf *co);
+void pie_draw(struct conf *co, int mode, const char *file_out);
 
 #endif /* __PIE_H__ */
