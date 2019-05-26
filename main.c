@@ -1,3 +1,11 @@
+/*
+ * Copyright 2010-2019 Thierry FOURNIER
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version
+ * 2 of the License.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -254,9 +262,9 @@ int main(int argc, char *argv[])
 				mode = 1;
 			else if (strcmp(argv[nb], "EPS") == 0)
 				mode = 2;
-			else if (strcmp(argv[nb], "PDF") == 0)
-				mode = 3;
 			else if (strcmp(argv[nb], "SVG") == 0)
+				mode = 3;
+			else if (strcmp(argv[nb], "PDF") == 0)
 				mode = 4;
 			else {
 				fprintf(stderr, "unknown format %s\n", argv[nb]);

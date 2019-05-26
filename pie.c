@@ -1,8 +1,17 @@
+/*
+ * Copyright 2010-2019 Thierry FOURNIER
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version
+ * 2 of the License.
+ */
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+// comment 
 #include <cairo.h>
 #include <cairo-ps.h>
 #include <cairo-pdf.h>
@@ -916,6 +925,10 @@ void pie_draw(struct conf *co, int mode, const char *file_out)
 	case 4:
 		s = cairo_pdf_surface_create_for_stream(cairo_wr, out, co->img_w, co->img_h);
 		break;
+	
+	default:
+		fprintf(stderr, "bad mode\n");
+		exit(1);
 	}
 
 	/* create cairo */
