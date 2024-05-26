@@ -56,7 +56,7 @@ struct conf {
 	double title_size;
 	char *title;
 	struct color title_color;
-	cairo_text_extents_t title_exts;;
+	cairo_text_extents_t title_exts;
 
 	char draw_leg;
 	double leg_size;

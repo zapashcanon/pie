@@ -1,6 +1,6 @@
 OBJS = pie.o ellipse.o
 LIBS = -lcairo -lpixman-1 -lm
-CFLAGS = -Wall -g -O0 -I/usr/include/cairo
+CFLAGS = -Wall -Wpedantic -g -O0 -I/usr/include/cairo
 
 all: pie libpie.so libpie-static.a
 
